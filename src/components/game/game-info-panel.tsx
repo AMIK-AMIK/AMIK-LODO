@@ -29,7 +29,7 @@ const PlayerStatus = ({ player, isCurrent }: { player: any; isCurrent: boolean }
 
 export default function GameInfoPanel({ gameState, onRollDice, isMyTurn, onRestart }: GameInfoPanelProps) {
   const router = useRouter()
-  const { players, currentPlayerIndex, turnState, diceValue, gameHistory } = gameState
+  const { players, currentPlayerIndex, turnState, diceValue, gameHistory, winner } = gameState
   const currentPlayer = players[currentPlayerIndex]
 
   const handleGoHome = () => {
@@ -38,18 +38,28 @@ export default function GameInfoPanel({ gameState, onRollDice, isMyTurn, onResta
     }
   }
 
+  const turnText = () => {
+    if (winner) return `${winner.name} wins!`
+    if (turnState === 'ai-thinking') return `${currentPlayer.name} is thinking...`
+    if (isMyTurn) {
+        if (turnState === 'rolling') return "Your turn to roll!"
+        if (turnState === 'moving') return "Choose a token to move."
+    }
+    return `${currentPlayer.name}'s Turn`
+  }
+
   return (
     <Card className="w-full max-w-[600px] flex-shrink-0 shadow-lg">
       <CardHeader>
         <CardTitle className="text-center text-xl">
-          {turnState === 'ai-thinking' ? `${currentPlayer.name} is thinking...` : `${currentPlayer.name}'s Turn`}
+          {turnText()}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-2">
           <h3 className="font-semibold text-muted-foreground text-sm mb-2 text-center">Players</h3>
           {players.map(p => (
-            <PlayerStatus key={p.id} player={p} isCurrent={p.id === currentPlayer.id} />
+            <PlayerStatus key={p.id} player={p} isCurrent={p.id === currentPlayer.id && !winner} />
           ))}
         </div>
 
@@ -57,7 +67,7 @@ export default function GameInfoPanel({ gameState, onRollDice, isMyTurn, onResta
           <Dice
             onRoll={onRollDice}
             value={diceValue}
-            isRolling={turnState === 'rolling' && isMyTurn}
+            isRolling={turnState === 'rolling' && isMyTurn && !winner}
             isThinking={turnState === 'ai-thinking'}
           />
         </div>
@@ -68,7 +78,7 @@ export default function GameInfoPanel({ gameState, onRollDice, isMyTurn, onResta
             {gameHistory.length === 0 ? (
               <p className="text-muted-foreground text-center">Game has started!</p>
             ) : (
-               [...gameHistory].reverse().map((log, i) => <p key={i} className="mb-1">{log}</p>)
+               gameHistory.map((log, i) => <p key={i} className="mb-1">{log}</p>)
             )}
           </ScrollArea>
         </div>

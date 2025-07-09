@@ -5,70 +5,71 @@ type TokenCoordinates = Record<PlayerColor, Record<TokenPosition['type'], Coordi
 
 const TILE = 32;
 const HALF = TILE / 2;
+const GRID_OFFSET = TILE / 2; // To center the grid in the 480x480 box
 
 const path: Coordinates[] = [
-  // Red path
-  { x: 1 * TILE + HALF, y: 6 * TILE + HALF }, { x: 2 * TILE + HALF, y: 6 * TILE + HALF }, { x: 3 * TILE + HALF, y: 6 * TILE + HALF }, { x: 4 * TILE + HALF, y: 6 * TILE + HALF }, { x: 5 * TILE + HALF, y: 6 * TILE + HALF },
-  { x: 6 * TILE + HALF, y: 5 * TILE + HALF }, { x: 6 * TILE + HALF, y: 4 * TILE + HALF }, { x: 6 * TILE + HALF, y: 3 * TILE + HALF }, { x: 6 * TILE + HALF, y: 2 * TILE + HALF }, { x: 6 * TILE + HALF, y: 1 * TILE + HALF },
-  { x: 7 * TILE + HALF, y: 1 * TILE + HALF }, { x: 8 * TILE + HALF, y: 1 * TILE + HALF },
-  // Green path
-  { x: 8 * TILE + HALF, y: 2 * TILE + HALF }, { x: 8 * TILE + HALF, y: 3 * TILE + HALF }, { x: 8 * TILE + HALF, y: 4 * TILE + HALF }, { x: 8 * TILE + HALF, y: 5 * TILE + HALF }, { x: 8 * TILE + HALF, y: 6 * TILE + HALF },
-  { x: 9 * TILE + HALF, y: 6 * TILE + HALF }, { x: 10 * TILE + HALF, y: 6 * TILE + HALF }, { x: 11 * TILE + HALF, y: 6 * TILE + HALF }, { x: 12 * TILE + HALF, y: 6 * TILE + HALF }, { x: 13 * TILE + HALF, y: 6 * TILE + HALF },
-  { x: 13 * TILE + HALF, y: 7 * TILE + HALF }, { x: 13 * TILE + HALF, y: 8 * TILE + HALF },
-  // Yellow path
-  { x: 12 * TILE + HALF, y: 8 * TILE + HALF }, { x: 11 * TILE + HALF, y: 8 * TILE + HALF }, { x: 10 * TILE + HALF, y: 8 * TILE + HALF }, { x: 9 * TILE + HALF, y: 8 * TILE + HALF }, { x: 8 * TILE + HALF, y: 8 * TILE + HALF },
-  { x: 8 * TILE + HALF, y: 9 * TILE + HALF }, { x: 8 * TILE + HALF, y: 10 * TILE + HALF }, { x: 8 * TILE + HALF, y: 11 * TILE + HALF }, { x: 8 * TILE + HALF, y: 12 * TILE + HALF }, { x: 8 * TILE + HALF, y: 13 * TILE + HALF },
-  { x: 7 * TILE + HALF, y: 13 * TILE + HALF }, { x: 6 * TILE + HALF, y: 13 * TILE + HALF },
-  // Blue path
-  { x: 6 * TILE + HALF, y: 12 * TILE + HALF }, { x: 6 * TILE + HALF, y: 11 * TILE + HALF }, { x: 6 * TILE + HALF, y: 10 * TILE + HALF }, { x: 6 * TILE + HALF, y: 9 * TILE + HALF }, { x: 6 * TILE + HALF, y: 8 * TILE + HALF },
-  { x: 5 * TILE + HALF, y: 8 * TILE + HALF }, { x: 4 * TILE + HALF, y: 8 * TILE + HALF }, { x: 3 * TILE + HALF, y: 8 * TILE + HALF }, { x: 2 * TILE + HALF, y: 8 * TILE + HALF }, { x: 1 * TILE + HALF, y: 8 * TILE + HALF },
-  { x: 1 * TILE + HALF, y: 7 * TILE + HALF }, { x: 1 * TILE + HALF, y: 6 * TILE + HALF },
-].map(p => ({ x: p.x + TILE, y: p.y + TILE }));
+  // Red path entrance area (bottom-left)
+  { x: 1 * TILE, y: 6 * TILE }, { x: 2 * TILE, y: 6 * TILE }, { x: 3 * TILE, y: 6 * TILE }, { x: 4 * TILE, y: 6 * TILE }, { x: 5 * TILE, y: 6 * TILE },
+  // Up to top-left corner
+  { x: 6 * TILE, y: 5 * TILE }, { x: 6 * TILE, y: 4 * TILE }, { x: 6 * TILE, y: 3 * TILE }, { x: 6 * TILE, y: 2 * TILE }, { x: 6 * TILE, y: 1 * TILE }, { x: 6 * TILE, y: 0 * TILE },
+  // Across to top-right corner
+  { x: 7 * TILE, y: 0 * TILE }, { x: 8 * TILE, y: 0 * TILE },
+  { x: 8 * TILE, y: 1 * TILE }, { x: 8 * TILE, y: 2 * TILE }, { x: 8 * TILE, y: 3 * TILE }, { x: 8 * TILE, y: 4 * TILE }, { x: 8 * TILE, y: 5 * TILE },
+  // Down to bottom-right corner
+  { x: 9 * TILE, y: 6 * TILE }, { x: 10 * TILE, y: 6 * TILE }, { x: 11 * TILE, y: 6 * TILE }, { x: 12 * TILE, y: 6 * TILE }, { x: 13 * TILE, y: 6 * TILE }, { x: 14 * TILE, y: 6 * TILE },
+  // Across to bottom-right
+  { x: 14 * TILE, y: 7 * TILE }, { x: 14 * TILE, y: 8 * TILE },
+  { x: 13 * TILE, y: 8 * TILE }, { x: 12 * TILE, y: 8 * TILE }, { x: 11 * TILE, y: 8 * TILE }, { x: 10 * TILE, y: 8 * TILE }, { x: 9 * TILE, y: 8 * TILE },
+  // Up to top-right
+  { x: 8 * TILE, y: 9 * TILE }, { x: 8 * TILE, y: 10 * TILE }, { x: 8 * TILE, y: 11 * TILE }, { x: 8 * TILE, y: 12 * TILE }, { x: 8 * TILE, y: 13 * TILE }, { x: 8 * TILE, y: 14 * TILE },
+  // Across to top-left
+  { x: 7 * TILE, y: 14 * TILE }, { x: 6 * TILE, y: 14 * TILE },
+  { x: 6 * TILE, y: 13 * TILE }, { x: 6 * TILE, y: 12 * TILE }, { x: 6 * TILE, y: 11 * TILE }, { x: 6 * TILE, y: 10 * TILE }, { x: 6 * TILE, y: 9 * TILE },
+  // Down to bottom-left
+  { x: 5 * TILE, y: 8 * TILE }, { x: 4 * TILE, y: 8 * TILE }, { x: 3 * TILE, y: 8 * TILE }, { x: 2 * TILE, y: 8 * TILE }, { x: 1 * TILE, y: 8 * TILE }, { x: 0 * TILE, y: 8 * TILE },
+  { x: 0 * TILE, y: 7 * TILE }, { x: 0 * TILE, y: 6 * TILE },
+].map(p => ({ x: p.x + HALF, y: p.y + HALF }));
 
 
 const homeStretch: Record<PlayerColor, Coordinates[]> = {
-  red: Array.from({ length: 6 }, (_, i) => ({ x: (i + 2) * TILE + HALF, y: 7 * TILE + HALF })),
-  green: Array.from({ length: 6 }, (_, i) => ({ x: 7 * TILE + HALF, y: (i + 2) * TILE + HALF })),
-  yellow: Array.from({ length: 6 }, (_, i) => ({ x: (12 - i) * TILE + HALF, y: 7 * TILE + HALF })),
-  blue: Array.from({ length: 6 }, (_, i) => ({ x: 7 * TILE + HALF, y: (12 - i) * TILE + HALF })),
+  red: Array.from({ length: 6 }, (_, i) => ({ x: (i + 1) * TILE, y: 7 * TILE })).map(p => ({ x: p.x + HALF, y: p.y + HALF })),
+  green: Array.from({ length: 6 }, (_, i) => ({ x: 7 * TILE, y: (i + 1) * TILE })).map(p => ({ x: p.x + HALF, y: p.y + HALF })),
+  yellow: Array.from({ length: 6 }, (_, i) => ({ x: (13 - i) * TILE, y: 7 * TILE })).map(p => ({ x: p.x + HALF, y: p.y + HALF })),
+  blue: Array.from({ length: 6 }, (_, i) => ({ x: 7 * TILE, y: (13 - i) * TILE })).map(p => ({ x: p.x + HALF, y: p.y + HALF })),
 };
 
 const base: Record<PlayerColor, Coordinates[]> = {
-    red: [{ x: 96, y: 96-24 }, { x: 96+24, y: 96 }, { x: 96, y: 96+24 }, { x: 96-24, y: 96 }].map(p => ({ x: p.x - 24, y: p.y - 24 })),
-    green: [{ x: 384, y: 96-24 }, { x: 384+24, y: 96 }, { x: 384, y: 96+24 }, { x: 384-24, y: 96 }].map(p => ({ x: p.x - 24, y: p.y - 24 })),
-    blue: [{ x: 96, y: 384-24 }, { x: 96+24, y: 384 }, { x: 96, y: 384+24 }, { x: 96-24, y: 384 }].map(p => ({ x: p.x - 24, y: p.y - 24 })),
-    yellow: [{ x: 384, y: 384-24 }, { x: 384+24, y: 384 }, { x: 384, y: 384+24 }, { x: 384-24, y: 384 }].map(p => ({ x: p.x - 24, y: p.y - 24 })),
+    red:    [{ x: 96-24, y: 96-24 }, { x: 96+24, y: 96-24 }, { x: 96+24, y: 96+24 }, { x: 96-24, y: 96+24 }],
+    green:  [{ x: 384-24, y: 96-24 }, { x: 384+24, y: 96-24 }, { x: 384+24, y: 96+24 }, { x: 384-24, y: 96+24 }],
+    blue:   [{ x: 96-24, y: 384-24 }, { x: 96+24, y: 384-24 }, { x: 96+24, y: 384+24 }, { x: 96-24, y: 384+24 }],
+    yellow: [{ x: 384-24, y: 384-24 }, { x: 384+24, y: 384-24 }, { x: 384+24, y: 384+24 }, { x: 384-24, y: 384+24 }],
 };
 
 const finished: Record<PlayerColor, Coordinates[]> = {
-    red: Array.from({length: 4}, (_, i) => ({ x: homeStretch.red[5].x + 10*(i-1.5), y: homeStretch.red[5].y })),
-    green: Array.from({length: 4}, (_, i) => ({ x: homeStretch.green[5].x, y: homeStretch.green[5].y + 10*(i-1.5) })),
-    yellow: Array.from({length: 4}, (_, i) => ({ x: homeStretch.yellow[5].x + 10*(i-1.5), y: homeStretch.yellow[5].y })),
-    blue: Array.from({length: 4}, (_, i) => ({ x: homeStretch.blue[5].x, y: homeStretch.blue[5].y + 10*(i-1.5) })),
+    red:    Array.from({length: 4}, (_, i) => ({ x: 240 + (i-1.5)*20, y: 240 - 20 })),
+    green:  Array.from({length: 4}, (_, i) => ({ x: 240 + 20, y: 240 + (i-1.5)*20 })),
+    yellow: Array.from({length: 4}, (_, i) => ({ x: 240 + (i-1.5)*20, y: 240 + 20 })),
+    blue:   Array.from({length: 4}, (_, i) => ({ x: 240 - 20, y: 240 + (i-1.5)*20 })),
 }
 
 const colorOffsets = { red: 0, green: 13, yellow: 26, blue: 39 };
 
 export const BOARD_COORDS = {
     path,
-    homeStretch: {
-        red: homeStretch.red.map(p => ({ x: p.x + TILE, y: p.y + TILE })),
-        green: homeStretch.green.map(p => ({ x: p.x + TILE, y: p.y + TILE })),
-        yellow: homeStretch.yellow.map(p => ({ x: p.x + TILE, y: p.y + TILE })),
-        blue: homeStretch.blue.map(p => ({ x: p.x + TILE, y: p.y + TILE })),
-    },
+    homeStretch,
     start: {
         red: path[colorOffsets.red],
         green: path[colorOffsets.green],
         yellow: path[colorOffsets.yellow],
         blue: path[colorOffsets.blue],
     },
-    safe: [ path[8], path[21], path[34], path[47], path[colorOffsets.red], path[colorOffsets.green], path[colorOffsets.yellow], path[colorOffsets.blue] ],
+    safeIndices: [8, 21, 34, 47, colorOffsets.red, colorOffsets.green, colorOffsets.yellow, colorOffsets.blue],
+    safe: [path[8], path[21], path[34], path[47], path[colorOffsets.red], path[colorOffsets.green], path[colorOffsets.yellow], path[colorOffsets.blue]],
     tokens: {
-        red: { base: base.red, track: path, home: [], finished: finished.red, 'home-stretch': homeStretch.red.map(p => ({ x: p.x + TILE, y: p.y + TILE })) },
-        green: { base: base.green, track: path, home: [], finished: finished.green, 'home-stretch': homeStretch.green.map(p => ({ x: p.x + TILE, y: p.y + TILE })) },
-        yellow: { base: base.yellow, track: path, home: [], finished: finished.yellow, 'home-stretch': homeStretch.yellow.map(p => ({ x: p.x + TILE, y: p.y + TILE })) },
-        blue: { base: base.blue, track: path, home: [], finished: finished.blue, 'home-stretch': homeStretch.blue.map(p => ({ x: p.x + TILE, y: p.y + TILE })) },
+        red: { base: base.red, track: path, finished: finished.red, 'home-stretch': homeStretch.red },
+        green: { base: base.green, track: path, finished: finished.green, 'home-stretch': homeStretch.green },
+        yellow: { base: base.yellow, track: path, finished: finished.yellow, 'home-stretch': homeStretch.yellow },
+        blue: { base: base.blue, track: path, finished: finished.blue, 'home-stretch': homeStretch.blue },
     },
     colorOffsets,
 }

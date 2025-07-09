@@ -81,3 +81,18 @@ body {
 .text-ludo-green { color: #4CAF50; }
 .text-ludo-yellow { color: #c4b32f; }
 .text-ludo-blue { color: #2196F3; }
+
+@keyframes pulse-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 3px white) drop-shadow(0 0 3px white);
+    stroke-width: 3;
+  }
+  50% {
+    filter: drop-shadow(0 0 10px white) drop-shadow(0 0 10px white);
+    stroke-width: 4;
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 1.5s infinite ease-in-out;
+}

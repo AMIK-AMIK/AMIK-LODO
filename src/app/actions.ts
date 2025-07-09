@@ -1,12 +1,13 @@
 "use server"
 
 import { aiOpponentMoveEvaluator, type AiOpponentMoveEvaluatorInput } from '@/ai/flows/ai-opponent-move-evaluator'
-import type { GameState, TokenPosition } from '@/lib/types';
+import type { GameState, TokenPosition, PlayerColor } from '@/lib/types';
 
 export async function getAiMove(
-    boardState: string,
+    boardState: Record<PlayerColor, string[]>,
     availableMoves: { tokenId: number, newPosition: TokenPosition }[],
-    currentPlayerName: string
+    currentPlayerName: string,
+    diceValue: number
 ): Promise<{ tokenId: number, newPosition: TokenPosition } | null> {
     
     if (availableMoves.length === 0) {
@@ -18,8 +19,9 @@ export async function getAiMove(
     
     const input: AiOpponentMoveEvaluatorInput = {
         boardState: boardState,
-        availableMoves: availableMoves.map(move => `Move token ${move.tokenId} to ${move.newPosition.type} at index ${move.newPosition.index}`),
+        availableMoves: availableMoves.map(move => `Token ${move.tokenId} to ${move.newPosition.type} at ${move.newPosition.index}`),
         currentPlayer: currentPlayerName,
+        diceValue: diceValue,
     };
 
     try {
@@ -28,11 +30,11 @@ export async function getAiMove(
         
         // Find the move in availableMoves that matches the string from AI
         const matchedMove = availableMoves.find(move => {
-            const moveString = `Move token ${move.tokenId} to ${move.newPosition.type} at index ${move.newPosition.index}`;
-            return moveString === bestMoveString;
+            const moveString = `Token ${move.tokenId} to ${move.newPosition.type} at ${move.newPosition.index}`;
+            return moveString.toLowerCase() === bestMoveString.toLowerCase();
         });
 
-        return matchedMove || availableMoves[0]; // fallback to first available move if AI fails
+        return matchedMove || availableMoves[Math.floor(Math.random() * availableMoves.length)]; 
     } catch (error) {
         console.error("Error getting AI move:", error);
         // Fallback to a random move in case of an error

@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: 'AMIK LODO',
+  title: 'Ludo Champ',
   description: 'A modern Ludo game with AI opponents.',
   manifest: '/site.webmanifest',
   themeColor: '#7E57C2',
