@@ -1,21 +1,23 @@
 {
   "name": "AMIK LODO",
-  "short_name": "Ludo",
-  "description": "A modern Ludo game with AI opponents, playable offline.",
+  "short_name": "AMIK LODO",
+  "description": "A modern Ludo game with AI opponents.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0b1120",
+  "background_color": "#091a3e",
   "theme_color": "#8168B8",
   "icons": [
     {
-      "src": "/icons/icon-192x192.svg",
+      "src": "https://placehold.co/192x192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-512x512.svg",
+      "src": "https://placehold.co/512x512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
