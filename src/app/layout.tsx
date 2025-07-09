@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   manifest: '/site.webmanifest',
   themeColor: '#7E57C2',
   icons: {
-    icon: '/favicon-32x32.png',
+    icon: '/favicon.ico',
     shortcut: '/favicon.ico',
     apple: '/apple-touch-icon.png',
   },
