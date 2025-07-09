@@ -7,12 +7,12 @@ const favicon = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vc
 export const metadata: Metadata = {
   title: 'AMIK LODO',
   description: 'A modern Ludo game with AI opponents.',
-  manifest: '/manifest.json',
-  themeColor: '#8168B8',
+  manifest: '/site.webmanifest',
+  themeColor: '#7E57C2',
   icons: {
     icon: favicon,
     shortcut: favicon,
-    apple: favicon,
+    apple: '/apple-touch-icon.png',
   },
 };
 
