@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/toaster"
 export const metadata: Metadata = {
   title: 'AMIK LODO',
   description: 'A modern Ludo game with AI opponents.',
+  manifest: '/manifest.json',
+  themeColor: '#8168B8',
 };
 
 export default function RootLayout({
