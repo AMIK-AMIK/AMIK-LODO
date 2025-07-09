@@ -4,7 +4,7 @@
   "description": "A modern Ludo game with AI opponents.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#030617",
+  "background_color": "#211936",
   "theme_color": "#7E57C2",
   "icons": [
     {
@@ -15,11 +15,6 @@
     {
       "src": "/android-chrome-512x512.png",
       "sizes": "512x512",
-      "type": "image/png"
-    },
-    {
-      "src": "/apple-touch-icon.png",
-      "sizes": "180x180",
       "type": "image/png"
     }
   ]
