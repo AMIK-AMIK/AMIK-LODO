@@ -39,7 +39,7 @@ export default function GameInfoPanel({ gameState, onRollDice, isMyTurn, onResta
   }
 
   return (
-    <Card className="w-full lg:w-80 flex-shrink-0 shadow-lg">
+    <Card className="w-full max-w-[600px] flex-shrink-0 shadow-lg">
       <CardHeader>
         <CardTitle className="text-center text-xl">
           {turnState === 'ai-thinking' ? `${currentPlayer.name} is thinking...` : `${currentPlayer.name}'s Turn`}

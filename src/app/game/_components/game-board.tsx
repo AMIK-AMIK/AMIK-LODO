@@ -39,11 +39,11 @@ function GameBoard() {
 
   if (!gameState || !config) {
     return (
-      <div className="flex flex-col lg:flex-row gap-8 w-full max-w-7xl mx-auto items-start justify-center">
+      <div className="flex flex-col gap-8 w-full items-center justify-center">
         <div className="w-full max-w-[600px] aspect-square">
            <Skeleton className="w-full h-full rounded-2xl" />
         </div>
-        <div className="w-full lg:w-80 flex-shrink-0">
+        <div className="w-full max-w-[600px] flex-shrink-0">
           <Skeleton className="w-full h-96 rounded-2xl" />
         </div>
       </div>
@@ -53,7 +53,7 @@ function GameBoard() {
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8 w-full max-w-7xl mx-auto items-start justify-center">
+    <div className="flex flex-col gap-8 w-full items-center justify-center">
       <LudoBoard
         tokens={gameState.tokens}
         validMoves={gameState.turnState === 'moving' ? gameState.validMoves : []}

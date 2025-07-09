@@ -123,7 +123,6 @@ export default function HomePage() {
           </div>
         </CardFooter>
       </Card>
-      <p className="mt-8 text-sm text-muted-foreground">Press 'B' to toggle the sidebar during the game.</p>
     </main>
   )
 }
