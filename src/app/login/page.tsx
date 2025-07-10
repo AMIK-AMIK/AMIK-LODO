@@ -72,6 +72,14 @@ export default function LoginPage() {
     }
   }
 
+  const handleAuthAction = (action: () => Promise<string | undefined>) => async () => {
+    setAuthError(null);
+    const error = await action();
+    if (error) {
+        setAuthError(error);
+    }
+  }
+
   if (loading || user) {
      return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-background">
@@ -150,11 +158,11 @@ export default function LoginPage() {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  <Button variant="outline" onClick={loginWithGoogle}>
+                  <Button variant="outline" onClick={handleAuthAction(loginWithGoogle)}>
                     <svg className="mr-2 -ml-1 w-4 h-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 21.2 173.8 56.2l-65.4 64.2C335.5 99.4 294.8 84 248 84c-85.8 0-155.1 69.4-155.1 172s69.3 172 155.1 172c98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 26.9 3.9 41.4z"></path></svg>
                     Google
                   </Button>
-                  <Button variant="outline" onClick={loginAnonymously}>
+                  <Button variant="outline" onClick={handleAuthAction(loginAnonymously)}>
                     <User className="mr-2 -ml-1 w-4 h-4" />
                     Guest
                   </Button>
@@ -226,7 +234,7 @@ export default function LoginPage() {
                     <span className="bg-card px-2 text-muted-foreground">Or sign up with</span>
                   </div>
                 </div>
-                <Button variant="outline" className="w-full" onClick={loginWithGoogle}>
+                <Button variant="outline" className="w-full" onClick={handleAuthAction(loginWithGoogle)}>
                   <svg className="mr-2 -ml-1 w-4 h-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 21.2 173.8 56.2l-65.4 64.2C335.5 99.4 294.8 84 248 84c-85.8 0-155.1 69.4-155.1 172s69.3 172 155.1 172c98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 26.9 3.9 41.4z"></path></svg>
                   Sign up with Google
                 </Button>
@@ -237,3 +245,5 @@ export default function LoginPage() {
     </main>
   )
 }
+
+    

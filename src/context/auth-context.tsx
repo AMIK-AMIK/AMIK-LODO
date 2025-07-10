@@ -22,6 +22,7 @@ const getFriendlyErrorMessage = (error: AuthError): string => {
     switch (error.code) {
         case 'auth/user-not-found':
         case 'auth/wrong-password':
+        case 'auth/invalid-credential':
             return 'Invalid email or password.';
         case 'auth/email-already-in-use':
             return 'This email address is already in use.';
@@ -61,28 +62,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
+  const handleAuthSuccess = (message: string) => {
+    toast({ title: "Success", description: message });
+    router.push('/');
+  }
+
+  const handleAuthError = (error: AuthError) => {
+    console.error("Auth error:", error);
+    const errorMessage = getFriendlyErrorMessage(error);
+    toast({ title: "Authentication Failed", description: errorMessage, variant: "destructive" });
+    return errorMessage;
+  }
+
   const loginWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-      toast({ title: "Success", description: "Logged in successfully!" });
-      router.push('/');
+      handleAuthSuccess("Logged in successfully!");
     } catch (error) {
-      console.error("Google login error:", error);
-      const errorMessage = getFriendlyErrorMessage(error as AuthError);
-      toast({ title: "Login Failed", description: errorMessage, variant: "destructive" });
-      return errorMessage;
+      return handleAuthError(error as AuthError);
     }
   };
 
   const loginWithEmail = async (email: string, pass: string) => {
     try {
         await signInWithEmailAndPassword(auth, email, pass);
-        toast({ title: "Success", description: "Logged in successfully!" });
-        router.push('/');
+        handleAuthSuccess("Logged in successfully!");
     } catch(error) {
-        console.error("Email login error:", error);
-        return getFriendlyErrorMessage(error as AuthError);
+        return handleAuthError(error as AuthError);
     }
   }
 
@@ -94,24 +101,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         // Manually update user state to reflect display name immediately
         setUser(auth.currentUser);
-        toast({ title: "Success", description: "Account created successfully!" });
-        router.push('/');
+        handleAuthSuccess("Account created successfully!");
     } catch(error) {
-        console.error("Email sign up error:", error);
-        return getFriendlyErrorMessage(error as AuthError);
+        return handleAuthError(error as AuthError);
     }
   }
 
   const loginAnonymously = async () => {
     try {
         await signInAnonymously(auth);
-        toast({ title: "Welcome!", description: "You are playing as a guest." });
-        router.push('/');
+        handleAuthSuccess("You are playing as a guest.");
     } catch(error) {
-        console.error("Anonymous login error:", error);
-        const errorMessage = getFriendlyErrorMessage(error as AuthError);
-        toast({ title: "Login Failed", description: errorMessage, variant: "destructive" });
-        return errorMessage;
+        return handleAuthError(error as AuthError);
     }
   }
 
@@ -147,3 +148,5 @@ export function useAuth() {
   }
   return context;
 }
+
+    
