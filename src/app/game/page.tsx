@@ -1,23 +1,20 @@
-// Note: The full game logic is complex and will be added in subsequent steps.
-// This file sets up the structure and basic components for the game page.
+
 "use client"
 
 import { Suspense } from 'react';
-import GameBoard from './_components/game-board';
-
-function GamePage() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-background p-2 sm:p-4">
-       <h1 className="text-3xl font-bold mb-4 text-primary">AMIK LODO</h1>
-       <GameBoard />
-    </main>
-  );
-}
+import { redirect } from 'next/navigation';
 
 export default function GamePageWrapper() {
+  // This page is now dynamic and needs a gameId. 
+  // If someone navigates here directly, redirect them to the home page.
+  redirect('/');
+  
   return (
-    <Suspense fallback={<div>Loading game...</div>}>
-      <GamePage />
+    <Suspense fallback={<div>Loading...</div>}>
+      {/* This content will likely not be rendered due to the redirect. */}
+      <div>Redirecting...</div>
     </Suspense>
   )
 }
+
+    

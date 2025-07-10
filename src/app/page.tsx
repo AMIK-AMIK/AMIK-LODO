@@ -1,16 +1,20 @@
+
 "use client"
 
 import { useState, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { Users, Cpu, PersonStanding, Info, BarChart3, Crown, Bot } from "lucide-react"
+import { Users, Cpu, PersonStanding, Info, BarChart3, Crown, Bot, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { HowToPlayDialog } from "@/components/game/how-to-play-dialog"
 import { LeaderboardDialog } from "@/components/game/leaderboard-dialog"
-import type { Player, PlayerType, PlayerColor } from "@/lib/types"
+import type { Player, PlayerType, PlayerColor, GameConfig } from "@/lib/types"
+import { db } from "@/lib/firebase"
+import { collection, addDoc } from "firebase/firestore"
 
 const ALL_COLORS: PlayerColor[] = ["red", "green", "yellow", "blue"];
 
@@ -19,10 +23,11 @@ export default function HomePage() {
   const [numPlayers, setNumPlayers] = useState<number>(4)
   const [players, setPlayers] = useState<Player[]>([
     { id: 1, type: 'human', color: 'red', name: 'Player 1' },
-    { id: 2, type: 'ai', color: 'green', name: 'Player 2' },
-    { id: 3, type: 'ai', color: 'yellow', name: 'Player 3' },
-    { id: 4, type: 'ai', color: 'blue', name: 'Player 4' },
+    { id: 2, type: 'ai', color: 'green', name: 'AI Bot 1' },
+    { id: 3, type: 'ai', color: 'yellow', name: 'AI Bot 2' },
+    { id: 4, type: 'ai', color: 'blue', name: 'AI Bot 3' },
   ])
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleNumPlayersChange = (value: string) => {
     const count = parseInt(value, 10)
@@ -49,6 +54,12 @@ export default function HomePage() {
     setPlayers(currentPlayers => {
       const newPlayers = [...currentPlayers]
       newPlayers[index].type = type
+      // Reset name on type change
+      if (type === 'human') {
+        newPlayers[index].name = `Player ${index + 1}`;
+      } else {
+        newPlayers[index].name = `AI Bot ${index + 1}`;
+      }
       return newPlayers
     })
   }
@@ -69,17 +80,35 @@ export default function HomePage() {
     });
   };
 
+  const handleNameChange = (index: number, name: string) => {
+    setPlayers(currentPlayers => {
+      const newPlayers = [...currentPlayers]
+      newPlayers[index].name = name;
+      return newPlayers;
+    })
+  }
+
 
   const humanPlayerCount = useMemo(() => players.filter(p => p.type === 'human').length, [players]);
 
-  const handleStartGame = useCallback(() => {
+  const handleStartGame = useCallback(async () => {
     if (humanPlayerCount === 0) {
       alert("At least one human player is required to start the game.");
       return;
     }
-    const gameConfig = { players };
-    const encodedConfig = btoa(JSON.stringify(gameConfig));
-    router.push(`/game?config=${encodedConfig}`);
+    setIsLoading(true);
+    try {
+      const gameConfig: GameConfig = { players };
+      const docRef = await addDoc(collection(db, "games"), {
+        ...gameConfig,
+        createdAt: new Date(),
+      });
+      router.push(`/game/${docRef.id}`);
+    } catch (error) {
+      console.error("Error creating game:", error);
+      alert("Could not create game. Please check your connection and try again.");
+      setIsLoading(false);
+    }
   }, [players, humanPlayerCount, router]);
 
   return (
@@ -116,44 +145,58 @@ export default function HomePage() {
 
           <div className="space-y-4">
             {players.map((player, index) => (
-              <div key={player.id} className="flex items-center justify-between gap-4 p-3 rounded-lg bg-secondary/50">
-                <div className="flex items-center gap-3">
-                  <Popover>
-                    <PopoverTrigger asChild disabled={player.type !== 'human'}>
-                       <button className={`w-6 h-6 rounded-full bg-ludo-${player.color} border-2 border-white/50 ${player.type === 'human' ? 'cursor-pointer hover:scale-110 transition-transform' : 'cursor-not-allowed'}`} aria-label={`Change color for Player ${player.id}`}/>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-2">
-                        <div className="flex gap-2">
-                            {ALL_COLORS.slice(0, numPlayers).map(color => (
-                                <button key={color} onClick={() => handleColorChange(index, color)} className={`w-8 h-8 rounded-full bg-ludo-${color} border-2 ${player.color === color ? 'border-white' : 'border-transparent'} transition-all hover:scale-110`}/>
-                            ))}
-                        </div>
-                    </PopoverContent>
-                  </Popover>
-                   <Label htmlFor={`player-type-${index}`} className={`font-bold text-ludo-${player.color}`}>
-                     Player {player.id}
-                   </Label>
+              <div key={player.id} className="flex flex-col gap-3 p-3 rounded-lg bg-secondary/50">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <Popover>
+                            <PopoverTrigger asChild>
+                            <button className={`w-6 h-6 rounded-full bg-ludo-${player.color} border-2 border-white/50 cursor-pointer hover:scale-110 transition-transform`} aria-label={`Change color for Player ${player.id}`}/>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-2">
+                                <div className="flex gap-2">
+                                    {ALL_COLORS.slice(0, numPlayers).map(color => (
+                                        <button key={color} onClick={() => handleColorChange(index, color)} className={`w-8 h-8 rounded-full bg-ludo-${color} border-2 ${player.color === color ? 'border-white' : 'border-transparent'} transition-all hover:scale-110`}/>
+                                    ))}
+                                </div>
+                            </PopoverContent>
+                        </Popover>
+                        <Label htmlFor={`player-type-${index}`} className={`font-bold text-ludo-${player.color}`}>
+                            Player {player.id}
+                        </Label>
+                    </div>
+                    <Select onValueChange={(type: PlayerType) => handlePlayerTypeChange(index, type)} defaultValue={player.type}>
+                      <SelectTrigger id={`player-type-${index}`} className="w-[140px]">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="human">
+                          <div className="flex items-center gap-2"><PersonStanding className="w-4 h-4" /> Human</div>
+                        </SelectItem>
+                        <SelectItem value="ai">
+                          <div className="flex items-center gap-2"><Bot className="w-4 h-4" /> AI</div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                 </div>
-                <Select onValueChange={(type: PlayerType) => handlePlayerTypeChange(index, type)} defaultValue={player.type}>
-                  <SelectTrigger id={`player-type-${index}`} className="w-[140px]">
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="human">
-                      <div className="flex items-center gap-2"><PersonStanding className="w-4 h-4" /> Human</div>
-                    </SelectItem>
-                    <SelectItem value="ai">
-                      <div className="flex items-center gap-2"><Bot className="w-4 h-4" /> AI</div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                {player.type === 'human' && (
+                    <div className="flex items-center gap-2">
+                        <Input 
+                            id={`player-name-${index}`}
+                            placeholder="Enter player name"
+                            value={player.name}
+                            onChange={(e) => handleNameChange(index, e.target.value)}
+                            className="bg-background/50"
+                        />
+                    </div>
+                )}
               </div>
             ))}
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
-          <Button size="lg" className="w-full font-bold text-lg" onClick={handleStartGame}>
-            Start Game
+          <Button size="lg" className="w-full font-bold text-lg" onClick={handleStartGame} disabled={isLoading}>
+            {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
+            {isLoading ? "Creating Game..." : "Start Game"}
           </Button>
           <div className="flex gap-4 w-full">
             <HowToPlayDialog />
@@ -164,3 +207,5 @@ export default function HomePage() {
     </main>
   )
 }
+
+    
