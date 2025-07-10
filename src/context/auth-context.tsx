@@ -2,15 +2,44 @@
 "use client"
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { onAuthStateChanged, User, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { 
+    onAuthStateChanged, 
+    User, 
+    GoogleAuthProvider, 
+    signInWithPopup, 
+    signOut,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    updateProfile,
+    AuthError
+} from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 
+const getFriendlyErrorMessage = (error: AuthError): string => {
+    switch (error.code) {
+        case 'auth/user-not-found':
+        case 'auth/wrong-password':
+            return 'Invalid email or password.';
+        case 'auth/email-already-in-use':
+            return 'This email address is already in use.';
+        case 'auth/weak-password':
+            return 'The password is too weak.';
+        case 'auth/invalid-email':
+            return 'The email address is not valid.';
+        default:
+            return 'An unexpected error occurred. Please try again.';
+    }
+}
+
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  loginWithGoogle: () => Promise<void>;
+  loginWithGoogle: () => Promise<string | undefined>;
+  loginWithEmail: (email: string, pass: string) => Promise<string | undefined>;
+  signUpWithEmail: (email: string, pass: string, displayName: string) => Promise<string | undefined>;
   logout: () => Promise<void>;
 }
 
@@ -38,9 +67,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       router.push('/');
     } catch (error) {
       console.error("Google login error:", error);
-      toast({ title: "Login Failed", description: "Could not sign in with Google.", variant: "destructive" });
+      const errorMessage = getFriendlyErrorMessage(error as AuthError);
+      toast({ title: "Login Failed", description: errorMessage, variant: "destructive" });
+      return errorMessage;
     }
   };
+
+  const loginWithEmail = async (email: string, pass: string) => {
+    try {
+        await signInWithEmailAndPassword(auth, email, pass);
+        toast({ title: "Success", description: "Logged in successfully!" });
+        router.push('/');
+    } catch(error) {
+        console.error("Email login error:", error);
+        const errorMessage = getFriendlyErrorMessage(error as AuthError);
+        toast({ title: "Login Failed", description: errorMessage, variant: "destructive" });
+        return errorMessage;
+    }
+  }
+
+  const signUpWithEmail = async (email: string, pass: string, displayName: string) => {
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+        if(userCredential.user) {
+            await updateProfile(userCredential.user, { displayName });
+        }
+        // Manually update user state to reflect display name immediately
+        setUser(auth.currentUser);
+        toast({ title: "Success", description: "Account created successfully!" });
+        router.push('/');
+    } catch(error) {
+        console.error("Email sign up error:", error);
+        const errorMessage = getFriendlyErrorMessage(error as AuthError);
+        toast({ title: "Sign Up Failed", description: errorMessage, variant: "destructive" });
+        return errorMessage;
+    }
+  }
 
   const logout = async () => {
     try {
@@ -49,7 +111,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       router.push('/login');
     } catch (error) {
       console.error("Logout error:", error);
-      toast({ title: "Error", description: "Could not log out.", variant: "destructive" });
+      const errorMessage = getFriendlyErrorMessage(error as AuthError);
+      toast({ title: "Error", description: errorMessage, variant: "destructive" });
     }
   };
 
@@ -57,6 +120,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     loading,
     loginWithGoogle,
+    loginWithEmail,
+    signUpWithEmail,
     logout,
   };
 
