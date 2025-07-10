@@ -90,7 +90,7 @@ export default function HomePage() {
           <h1 className="text-5xl sm:text-7xl font-bold text-primary-foreground font-headline tracking-tighter">
             AMIK LODO
           </h1>
-          <p className="text-md sm:text-lg text-muted-foreground mt-1">The Modern Ludo Experiences</p>
+          <p className="text-md sm:text-lg text-muted-foreground mt-1">The Modern Ludo Experience</p>
         </div>
       </div>
 

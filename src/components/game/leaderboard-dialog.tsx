@@ -11,29 +11,37 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { BarChart3, Trophy } from "lucide-react"
+import { BarChart3, Trophy, Loader2 } from "lucide-react"
+import { db } from "@/lib/firebase"
+import { collection, getDocs, doc, getDoc, setDoc, increment } from "firebase/firestore"
 
 interface LeaderboardEntry {
-  name: string;
+  id: string; // Player name
   wins: number;
 }
 
 export function LeaderboardDialog() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
+  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const fetchLeaderboard = async () => {
+    setLoading(true);
     try {
-      const savedLeaderboard = localStorage.getItem("ludoLeaderboard")
-      if (savedLeaderboard) {
-        setLeaderboard(JSON.parse(savedLeaderboard))
-      }
+      const querySnapshot = await getDocs(collection(db, "leaderboard"));
+      const board: LeaderboardEntry[] = [];
+      querySnapshot.forEach((doc) => {
+        board.push({ id: doc.id, ...doc.data() } as LeaderboardEntry);
+      });
+      setLeaderboard(board.sort((a, b) => b.wins - a.wins));
     } catch (error) {
-      console.error("Could not load leaderboard from local storage:", error)
+      console.error("Could not load leaderboard from Firestore:", error);
+    } finally {
+      setLoading(false);
     }
-  }, [])
+  };
 
   return (
-    <Dialog>
+    <Dialog onOpenChange={(open) => open && fetchLeaderboard()}>
       <DialogTrigger asChild>
         <Button variant="outline" className="w-full">
           <BarChart3 className="mr-2 h-4 w-4" />
@@ -44,11 +52,15 @@ export function LeaderboardDialog() {
         <DialogHeader>
           <DialogTitle className="text-2xl">Leaderboard</DialogTitle>
           <DialogDescription>
-            Top players on this device.
+            Top players from around the world.
           </DialogDescription>
         </DialogHeader>
         <div className="mt-4">
-          {leaderboard.length > 0 ? (
+          {loading ? (
+             <div className="flex justify-center items-center h-48">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+             </div>
+          ) : leaderboard.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -58,14 +70,12 @@ export function LeaderboardDialog() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {leaderboard
-                  .sort((a, b) => b.wins - a.wins)
-                  .map((entry, index) => (
-                    <TableRow key={index}>
+                {leaderboard.map((entry, index) => (
+                    <TableRow key={entry.id}>
                       <TableCell className="font-medium">
                         {index === 0 ? <Trophy className="text-yellow-400 w-5 h-5"/> : index + 1}
                       </TableCell>
-                      <TableCell>{entry.name}</TableCell>
+                      <TableCell>{entry.id}</TableCell>
                       <TableCell className="text-right">{entry.wins}</TableCell>
                     </TableRow>
                   ))}
@@ -80,21 +90,20 @@ export function LeaderboardDialog() {
   )
 }
 
-export const updateLeaderboard = (winnerName: string) => {
+export const updateLeaderboard = async (winnerName: string) => {
+    if (!winnerName || winnerName.trim() === "") return;
+    const leaderboardRef = collection(db, "leaderboard");
+    const playerDocRef = doc(leaderboardRef, winnerName);
+    
     try {
-        const savedLeaderboard = localStorage.getItem("ludoLeaderboard");
-        let leaderboard: LeaderboardEntry[] = savedLeaderboard ? JSON.parse(savedLeaderboard) : [];
-        
-        const playerIndex = leaderboard.findIndex(p => p.name === winnerName);
-
-        if (playerIndex > -1) {
-            leaderboard[playerIndex].wins += 1;
+        const playerDoc = await getDoc(playerDocRef);
+        if (playerDoc.exists()) {
+            await setDoc(playerDocRef, { wins: increment(1) }, { merge: true });
         } else {
-            leaderboard.push({ name: winnerName, wins: 1 });
+            await setDoc(playerDocRef, { wins: 1 });
         }
-
-        localStorage.setItem("ludoLeaderboard", JSON.stringify(leaderboard));
+        console.log(`Leaderboard updated for ${winnerName}`);
     } catch (error) {
-        console.error("Could not update leaderboard in local storage:", error);
+        console.error("Could not update leaderboard in Firestore:", error);
     }
 };
