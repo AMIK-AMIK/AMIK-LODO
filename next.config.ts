@@ -26,6 +26,13 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  webpack: (config, { isServer }) => {
+    // This is a workaround for a build warning caused by a dependency of Genkit.
+    // The '@opentelemetry/exporter-jaeger' package is not found, but it's not needed for the app to run.
+    // We can safely ignore it by resolving it to an empty module.
+    config.resolve.alias['@opentelemetry/exporter-jaeger'] = false;
+    return config;
+  },
 };
 
 export default withPWA(nextConfig);
