@@ -12,6 +12,9 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Link, QrCode, ClipboardCopy, Check } from "lucide-react";
 import QRCode from "qrcode.react";
 
+const MAX_FETCH_RETRIES = 5;
+const RETRY_DELAY_MS = 1000;
+
 export default function GameLobby({ params }: { params: { gameId: string } }) {
   const { gameId } = params;
   const router = useRouter();
@@ -28,25 +31,37 @@ export default function GameLobby({ params }: { params: { gameId: string } }) {
       return;
     }
 
+    let retryCount = 0;
     const fetchGameConfig = async () => {
-      setLoading(true);
+      if (!loading) setLoading(true);
+
       try {
         const gameDocRef = doc(db, "games", gameId);
         const docSnap = await getDoc(gameDocRef);
         if (docSnap.exists()) {
           setGameConfig(docSnap.data() as GameConfig);
+          setError(null);
+          setLoading(false);
         } else {
-          setError("Game not found. It may have been deleted or never existed.");
+            // This is the new logic to handle the "navigate first" approach
+            if (retryCount < MAX_FETCH_RETRIES) {
+                retryCount++;
+                setTimeout(fetchGameConfig, RETRY_DELAY_MS);
+            } else {
+                 setError("Game not found. It may have been deleted or failed to create.");
+                 setLoading(false);
+            }
         }
       } catch (e) {
         console.error("Error fetching game:", e);
         setError("Failed to load game data. Please try again.");
-      } finally {
         setLoading(false);
       }
     };
 
     fetchGameConfig();
+  // We've removed `loading` from dependencies to prevent re-triggering on our own state change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameId, user, authLoading, router]);
 
   const gameUrl = typeof window !== 'undefined' ? `${window.location.origin}/game/${gameId}` : '';

@@ -16,8 +16,9 @@ import { HowToPlayDialog } from "@/components/game/how-to-play-dialog"
 import { LeaderboardDialog } from "@/components/game/leaderboard-dialog"
 import type { Player, PlayerType, PlayerColor, GameConfig } from "@/lib/types"
 import { db } from "@/lib/firebase"
-import { collection, addDoc } from "firebase/firestore"
+import { collection, addDoc, doc, setDoc } from "firebase/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useToast } from "@/hooks/use-toast"
 
 const ALL_COLORS: PlayerColor[] = ["red", "green", "yellow", "blue"];
 
@@ -58,7 +59,8 @@ export default function HomePage() {
   const { user, loading } = useAuth();
   const [numPlayers, setNumPlayers] = useState<number>(4)
   const [players, setPlayers] = useState<Player[]>([])
-  const [isLoading, setIsLoading] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -154,36 +156,57 @@ export default function HomePage() {
   }
 
   const handleStartGame = useCallback(async () => {
+    if (!user) {
+        toast({ title: "Error", description: "You must be logged in to create a game.", variant: "destructive" });
+        return;
+    }
     const humanPlayers = players.filter(p => p.type === 'human');
     if (humanPlayers.length === 0) {
-      alert("At least one human player is required to start the game.");
-      return;
+        toast({ title: "Error", description: "At least one human player is required.", variant: "destructive" });
+        return;
     }
-    // Ensure the creator is one of the players
-    const finalPlayers = players.map(p => {
-        if (p.type === 'human' && p.uid === user?.uid) {
+
+    setIsCreating(true);
+
+    const finalPlayers = players.slice(0, numPlayers).map(p => {
+        if (p.type === 'human' && p.uid === user.uid) {
             const creatorName = user.isAnonymous ? `Guest (${user.uid.substring(0, 4)})` : user.displayName || p.name;
-            return {...p, name: creatorName};
+            return { ...p, name: creatorName };
         }
         return p;
     });
+    
+    // Create a new document reference with a unique ID
+    const newGameRef = doc(collection(db, "games"));
+    const newGameId = newGameRef.id;
 
+    // Navigate immediately
+    router.push(`/game/lobby/${newGameId}`);
 
-    setIsLoading(true);
+    // Save the game document in the background
     try {
-      const gameConfig: GameConfig = { players: finalPlayers.slice(0, numPlayers) };
-      const docRef = await addDoc(collection(db, "games"), {
-        ...gameConfig,
-        createdAt: new Date(),
-        creatorUid: user?.uid
-      });
-      router.push(`/game/lobby/${docRef.id}`);
+        const gameConfig: GameConfig = { players: finalPlayers };
+        await setDoc(newGameRef, {
+            ...gameConfig,
+            createdAt: new Date(),
+            creatorUid: user.uid
+        });
     } catch (error) {
-      console.error("Error creating game:", error);
-      alert("Could not create game. Please check your connection and try again.");
-      setIsLoading(false);
+        console.error("Error creating game in background:", error);
+        // If this fails, the user is already on the lobby page.
+        // The lobby page will show an error because it can't find the game.
+        // We can also show a toast here.
+        toast({
+            title: "Creation Error",
+            description: "Could not save the game. Please go back and try again.",
+            variant: "destructive",
+        });
+    } finally {
+        // We might not need to set isCreating to false if we've already navigated away.
+        // But it's good practice in case the navigation is interrupted.
+        setIsCreating(false);
     }
-  }, [players, numPlayers, user, router]);
+}, [players, numPlayers, user, router, toast]);
 
   if (loading || !user || players.length === 0) {
     return (
@@ -280,9 +303,9 @@ export default function HomePage() {
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
-          <Button size="lg" className="w-full font-bold text-lg" onClick={handleStartGame} disabled={isLoading}>
-            {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-            {isLoading ? "Creating Game..." : "Create Game & Invite"}
+          <Button size="lg" className="w-full font-bold text-lg" onClick={handleStartGame} disabled={isCreating}>
+            {isCreating ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
+            {isCreating ? "Creating Game..." : "Create Game & Invite"}
           </Button>
           <div className="flex gap-4 w-full">
             <HowToPlayDialog />
