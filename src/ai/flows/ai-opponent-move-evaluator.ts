@@ -45,8 +45,8 @@ const prompt = ai.definePrompt({
 
 Game Rules Summary:
 - Tokens start in the 'base'. A roll of 6 is required to move a token from 'base' to its 'track' start.
-- Rolling a 6 grants an extra turn.
-- A token can capture an opponent's token by landing on the same square, sending the opponent's token back to its base. This is not possible on 'safe zones'.
+- Rolling a 6 grants an extra turn. Rolling three 6s in a row forfeits the turn.
+- A token can capture an opponent's token by landing on the same square, sending the opponent's token back to its base. This is not possible on 'safe zones' or if the opponent has a block.
 - Safe zones are specific squares on the track where tokens cannot be captured. The starting square for each color is a safe zone.
 - Two tokens of the same color on the same square create a 'block', which opponents cannot pass.
 - To win, all four of a player's tokens must reach the 'finished' state.
@@ -57,9 +57,10 @@ Analyze the provided game state and select the best move from the list of 'avail
 Your Decision-Making Priorities:
 1.  **Winning Move**: If a move results in a token reaching the 'finished' state, prioritize it.
 2.  **Capture Opponent**: Prioritize moves that capture an opponent's token, especially if their token is far along the track.
-3.  **Save a Token**: If one of your tokens is threatened by an opponent, prioritize moving it to a safe zone or away from danger.
-4.  **Advance Tokens**: Move tokens out of the base and along the track. Spreading tokens out is generally better than having them clustered.
-5.  **Create a Block**: If possible, create a block on a strategic square.
+3.  **Create a Block**: If possible, create a block on a strategic square to hinder opponents.
+4.  **Save a Token**: If one of your tokens is threatened by an opponent, prioritize moving it to a safe zone or away from danger.
+5.  **Advance Tokens**: Move tokens out of the base and along the track. Spreading tokens out is generally better than having them clustered.
+6.  **Break a Block**: Sometimes it's necessary to move a token from your own block to advance or make a capture.
 
 Current Game State:
 - AI Player: {{{currentPlayer}}}
@@ -90,6 +91,12 @@ const aiOpponentMoveEvaluatorFlow = ai.defineFlow(
             return {
                 bestMove: input.availableMoves[0],
                 reasoning: "This was the only move available.",
+            };
+        }
+        if (input.availableMoves.length === 0) {
+            return {
+                bestMove: "",
+                reasoning: "No moves are available.",
             };
         }
         const {output} = await prompt(input);

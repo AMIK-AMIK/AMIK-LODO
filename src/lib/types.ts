@@ -28,6 +28,7 @@ export type GameState = {
   validMoves: { tokenId: number; newPosition: TokenPosition }[];
   winner: Player | null;
   gameHistory: string[];
+  consecutiveSixes: number;
 };
 
 export interface GameConfig {

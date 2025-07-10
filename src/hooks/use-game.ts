@@ -28,6 +28,7 @@ export function useGame(config: GameConfig | null) {
       validMoves: [],
       winner: null,
       gameHistory: [],
+      consecutiveSixes: 0,
     })
   }, [config])
 
@@ -36,7 +37,7 @@ export function useGame(config: GameConfig | null) {
   }, [initializeGame])
 
   const addHistory = (log: string) => {
-    setGameState(prev => prev ? ({ ...prev, gameHistory: [log, ...prev.gameHistory] }) : null);
+    setGameState(prev => prev ? ({ ...prev, gameHistory: [log, ...prev.gameHistory].slice(0, 50) }) : null);
   }
 
   const nextTurn = useCallback(() => {
@@ -49,19 +50,10 @@ export function useGame(config: GameConfig | null) {
         turnState: 'rolling',
         diceValue: null,
         validMoves: [],
+        consecutiveSixes: 0,
       }
     })
   }, [])
-  
-  const checkForWinner = useCallback((tokens: Token[], player: Player) => {
-    const playerTokens = tokens.filter(t => t.color === player.color);
-    const allHome = playerTokens.every(t => t.position.type === 'finished');
-    if (allHome) {
-      setGameState(prev => prev ? ({ ...prev, winner: player }) : null);
-      addHistory(`🎉 ${player.name} has won the game!`);
-      updateLeaderboard(player.name);
-    }
-  }, []);
 
   const moveToken = useCallback((tokenId: number) => {
     setGameState(prev => {
@@ -72,18 +64,23 @@ export function useGame(config: GameConfig | null) {
 
       let newTokens = [...prev.tokens]
       const currentTokenIndex = newTokens.findIndex(t => t.id === tokenId)
-      const currentToken = newTokens[currentTokenIndex]
       const currentPlayer = prev.players[prev.currentPlayerIndex]
 
       // Capture logic
       if (move.newPosition.type === 'track' && !isSafeZone(move.newPosition.index)) {
         const opponentTokensOnSquare = newTokens.filter(t => 
-            t.color !== currentToken.color &&
+            t.color !== currentPlayer.color &&
+            t.position.type === 'track' && 
+            t.position.index === move.newPosition.index
+        );
+        const ownTokensOnSquare = newTokens.filter(t => 
+            t.color === currentPlayer.color &&
             t.position.type === 'track' && 
             t.position.index === move.newPosition.index
         );
 
-        if (opponentTokensOnSquare.length === 1) {
+        // Can only capture if it's a single opponent token
+        if (opponentTokensOnSquare.length === 1 && ownTokensOnSquare.length === 0) {
             const capturedToken = opponentTokensOnSquare[0];
             const capturedTokenIndex = newTokens.findIndex(t => t.id === capturedToken.id);
             const capturedPlayer = prev.players.find(p => p.color === capturedToken.color)!;
@@ -95,17 +92,18 @@ export function useGame(config: GameConfig | null) {
       }
 
       newTokens[currentTokenIndex].position = move.newPosition
-      addHistory(`➡️ ${currentPlayer.name} moved a token.`);
+      addHistory(`➡️ ${currentPlayer.name} moved a token to ${move.newPosition.type} ${move.newPosition.index}.`);
       
       const gameJustWon = newTokens.filter(t => t.color === currentPlayer.color).every(t => t.position.type === 'finished');
 
       if (gameJustWon) {
-        setGameState(prev => prev ? ({ ...prev, tokens: newTokens, winner: currentPlayer }) : null);
         addHistory(`🎉 ${currentPlayer.name} has won the game!`);
         updateLeaderboard(currentPlayer.name);
-        return prev; // Stop further state changes
+        // We set winner in a separate effect to ensure state is updated first
+        return { ...prev, tokens: newTokens, winner: currentPlayer };
       }
 
+      // If a 6 was rolled, player gets another turn
       if (prev.diceValue === 6) {
         return {
           ...prev,
@@ -113,8 +111,10 @@ export function useGame(config: GameConfig | null) {
           turnState: 'rolling',
           diceValue: null,
           validMoves: [],
+          // consecutiveSixes is handled in rollDice
         }
       } else {
+        // Otherwise, next player's turn after a short delay
         setTimeout(nextTurn, 100);
         return { ...prev, tokens: newTokens, turnState: 'ai-thinking' }; // Use ai-thinking to prevent clicks
       }
@@ -125,9 +125,14 @@ export function useGame(config: GameConfig | null) {
     const playerTokens = tokens.filter(t => t.color === player.color);
     const validMoves: { tokenId: number; newPosition: TokenPosition }[] = [];
 
-    const isBlocked = (pos: TokenPosition) => {
-        if (pos.type !== 'track' || isSafeZone(pos.index)) return false;
-        const occupants = tokens.filter(t => t.position.type === pos.type && t.position.index === pos.index && t.color !== player.color);
+    const isBlockedByOpponent = (pos: TokenPosition, color: PlayerColor) => {
+        if (pos.type !== 'track') return false;
+        // A square is blocked if there are 2 or more opponent tokens on it
+        const occupants = tokens.filter(t => 
+            t.color !== color &&
+            t.position.type === 'track' && 
+            t.position.index === pos.index
+        );
         return occupants.length >= 2;
     }
 
@@ -135,19 +140,29 @@ export function useGame(config: GameConfig | null) {
       if (token.position.type === 'base') {
         if (diceValue === 6) {
           const startPos = { type: 'track' as const, index: getAbsoluteTrackIndex(player.color, 0) };
-          if (!isBlocked(startPos)) {
+          if (!isBlockedByOpponent(startPos, player.color)) {
             validMoves.push({ tokenId: token.id, newPosition: startPos });
           }
         }
       } else if (token.position.type === 'track') {
         const relativePos = getRelativeSteps(player.color, token.position.index);
-        const newRelativePos = relativePos + diceValue;
+        let newRelativePos = relativePos + diceValue;
+
+        // Check path for blocks
+        let pathIsClear = true;
+        for (let i = 1; i <= diceValue; i++) {
+            const stepPos = getAbsoluteTrackIndex(player.color, relativePos + i);
+            if(isBlockedByOpponent({ type: 'track', index: stepPos }, player.color)) {
+                pathIsClear = false;
+                break;
+            }
+        }
+        if (!pathIsClear) continue;
+
 
         if (newRelativePos < 51) {
           const newAbsPos = getAbsoluteTrackIndex(player.color, newRelativePos);
-          if (!isBlocked({ type: 'track', index: newAbsPos })) {
-            validMoves.push({ tokenId: token.id, newPosition: { type: 'track', index: newAbsPos } });
-          }
+           validMoves.push({ tokenId: token.id, newPosition: { type: 'track', index: newAbsPos } });
         } else {
           const homeStretchIndex = newRelativePos - 51;
           if (homeStretchIndex < 6) {
@@ -178,16 +193,35 @@ export function useGame(config: GameConfig | null) {
     if (!gameState || gameState.turnState !== 'rolling' || gameState.winner) return;
 
     const diceValue = Math.floor(Math.random() * 6) + 1;
+    // const diceValue = 6; // For testing
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    const newConsecutiveSixes = diceValue === 6 ? gameState.consecutiveSixes + 1 : 0;
+    
     addHistory(`🎲 ${currentPlayer.name} rolled a ${diceValue}.`);
+
+    if (newConsecutiveSixes === 3) {
+        addHistory(`🎲 Oops! ${currentPlayer.name} rolled three 6s in a row. Turn forfeited.`);
+        toast({ title: "Three 6s!", description: "Turn forfeited. Better luck next time!" });
+        setTimeout(nextTurn, 1500);
+        return;
+    }
     
     const validMoves = calculateValidMoves(currentPlayer, diceValue, gameState.tokens);
 
-    setGameState(prev => prev ? ({ ...prev, diceValue, validMoves, turnState: validMoves.length > 0 ? 'moving' : 'rolling' }) : null);
+    setGameState(prev => prev ? ({ 
+        ...prev, 
+        diceValue, 
+        validMoves, 
+        consecutiveSixes: newConsecutiveSixes,
+        turnState: validMoves.length > 0 ? 'moving' : (diceValue === 6 ? 'rolling' : 'rolling'),
+    }) : null);
 
     if (validMoves.length === 0) {
       toast({ title: "No valid moves!", description: `${currentPlayer.name} can't move.` });
-      setTimeout(nextTurn, 1500);
+      // If no moves but rolled a 6, they roll again. Otherwise, next turn.
+      if (diceValue !== 6) {
+        setTimeout(nextTurn, 1500);
+      }
     }
   }, [gameState, calculateValidMoves, nextTurn, toast]);
 
@@ -196,32 +230,56 @@ export function useGame(config: GameConfig | null) {
   }, [initializeGame]);
 
   const isMyTurn = useMemo(() => {
-    if (!gameState) return false;
+    if (!gameState || gameState.winner) return false;
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
     return currentPlayer.type === 'human';
   }, [gameState]);
   
   // AI Turn Logic
   useEffect(() => {
-    if (!gameState || gameState.winner) return;
+    if (!gameState || gameState.winner || !isMyTurn) return;
+    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    if (currentPlayer.type === 'human' && gameState.turnState === 'moving' && gameState.validMoves.length === 0) {
+        if(gameState.diceValue !== 6) {
+            setTimeout(nextTurn, 1000);
+        } else {
+            setGameState(prev => prev ? ({...prev, turnState: 'rolling'}) : null);
+        }
+    }
+  }, [gameState, isMyTurn, nextTurn]);
+  
+  // AI Turn Logic
+  useEffect(() => {
+    if (!gameState || gameState.winner || isMyTurn) return;
 
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
     if (currentPlayer.type === 'ai' && gameState.turnState === 'rolling') {
       setGameState(prev => prev ? ({ ...prev, turnState: 'ai-thinking' }) : null);
       
       const performAiTurn = async () => {
-        await new Promise(res => setTimeout(res, 500));
+        await new Promise(res => setTimeout(res, 800)); // AI "thinking" delay
         
         const diceValue = Math.floor(Math.random() * 6) + 1;
+        const newConsecutiveSixes = diceValue === 6 ? (gameState.consecutiveSixes || 0) + 1 : 0;
         addHistory(`🎲 (AI) ${currentPlayer.name} rolled a ${diceValue}.`);
         
+        if (newConsecutiveSixes === 3) {
+            addHistory(`🎲 Oops! (AI) ${currentPlayer.name} rolled three 6s in a row. Turn forfeited.`);
+            setTimeout(nextTurn, 1000);
+            return;
+        }
+
         const validMoves = calculateValidMoves(currentPlayer, diceValue, gameState.tokens);
 
-        setGameState(prev => prev ? ({ ...prev, diceValue, validMoves }) : null);
+        setGameState(prev => prev ? ({ ...prev, diceValue, validMoves, consecutiveSixes: newConsecutiveSixes }) : null);
 
         if (validMoves.length === 0) {
-          toast({ title: "No valid moves!", description: `(AI) ${currentPlayer.name} has no moves.` });
-          setTimeout(nextTurn, 1000);
+          if (diceValue === 6) {
+            // Roll again if it's a 6 and no moves
+            setGameState(prev => prev ? ({ ...prev, turnState: 'rolling' }) : null);
+          } else {
+            setTimeout(nextTurn, 1000);
+          }
           return;
         }
 
@@ -240,15 +298,18 @@ export function useGame(config: GameConfig | null) {
         if (bestMove) {
           moveToken(bestMove.tokenId);
         } else {
-            // Fallback if AI fails
-            const randomMove = validMoves[Math.floor(Math.random() * validMoves.length)];
-            moveToken(randomMove.tokenId);
+            // This case should ideally not be hit if validMoves.length > 0
+            if (diceValue !== 6) {
+                setTimeout(nextTurn, 1000);
+            } else {
+                setGameState(prev => prev ? ({ ...prev, turnState: 'rolling' }) : null);
+            }
         }
       };
       
       performAiTurn();
     }
-  }, [gameState, calculateValidMoves, moveToken, nextTurn, toast]);
+  }, [gameState, calculateValidMoves, moveToken, nextTurn, toast, isMyTurn]);
 
   return { gameState, rollDice, moveToken, restartGame, isMyTurn };
 }
