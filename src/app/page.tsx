@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { HowToPlayDialog } from "@/components/game/how-to-play-dialog"
 import { LeaderboardDialog } from "@/components/game/leaderboard-dialog"
-import type { Player, PlayerType } from "@/lib/types"
+import type { Player, PlayerType, PlayerColor } from "@/lib/types"
 
-const playerColors = ["red", "green", "yellow", "blue"];
+const ALL_COLORS: PlayerColor[] = ["red", "green", "yellow", "blue"];
 
 export default function HomePage() {
   const router = useRouter()
@@ -28,8 +29,17 @@ export default function HomePage() {
     setNumPlayers(count)
     setPlayers(currentPlayers => {
       const newPlayers: Player[] = []
+      const usedColors = new Set<PlayerColor>();
       for (let i = 0; i < count; i++) {
-        newPlayers.push(currentPlayers[i] || { id: i + 1, type: i === 0 ? 'human' : 'ai', color: playerColors[i], name: `Player ${i+1}` })
+        const existingPlayer = currentPlayers[i];
+        if (existingPlayer) {
+            newPlayers.push(existingPlayer);
+            usedColors.add(existingPlayer.color);
+        } else {
+            const availableColor = ALL_COLORS.find(c => !usedColors.has(c))!;
+            newPlayers.push({ id: i + 1, type: i === 0 ? 'human' : 'ai', color: availableColor, name: `Player ${i+1}` });
+            usedColors.add(availableColor);
+        }
       }
       return newPlayers
     })
@@ -43,6 +53,23 @@ export default function HomePage() {
     })
   }
   
+  const handleColorChange = (index: number, newColor: PlayerColor) => {
+    setPlayers(currentPlayers => {
+      const newPlayers = [...currentPlayers];
+      const oldColor = newPlayers[index].color;
+      const targetPlayerIndex = newPlayers.findIndex(p => p.color === newColor && p.id !== newPlayers[index].id);
+
+      // Swap colors with the other player
+      if (targetPlayerIndex !== -1) {
+        newPlayers[targetPlayerIndex].color = oldColor;
+      }
+      newPlayers[index].color = newColor;
+      
+      return newPlayers;
+    });
+  };
+
+
   const humanPlayerCount = useMemo(() => players.filter(p => p.type === 'human').length, [players]);
 
   const handleStartGame = useCallback(() => {
@@ -58,12 +85,12 @@ export default function HomePage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-8 bg-gradient-to-br from-background to-secondary/50">
       <div className="flex items-center gap-4 mb-8">
-        <Crown className="w-16 h-16 text-primary" />
+        <Crown className="w-12 h-12 sm:w-16 sm:h-16 text-primary" />
         <div>
           <h1 className="text-5xl sm:text-7xl font-bold text-primary-foreground font-headline tracking-tighter">
-            Ludo Champ
+            AMIK LODO
           </h1>
-          <p className="text-lg text-muted-foreground mt-1">The Modern Ludo Experience</p>
+          <p className="text-md sm:text-lg text-muted-foreground mt-1">The Modern Ludo Experiences</p>
         </div>
       </div>
 
@@ -91,7 +118,18 @@ export default function HomePage() {
             {players.map((player, index) => (
               <div key={player.id} className="flex items-center justify-between gap-4 p-3 rounded-lg bg-secondary/50">
                 <div className="flex items-center gap-3">
-                   <div className={`w-4 h-4 rounded-full bg-ludo-${player.color}`}></div>
+                  <Popover>
+                    <PopoverTrigger asChild disabled={player.type !== 'human'}>
+                       <button className={`w-6 h-6 rounded-full bg-ludo-${player.color} border-2 border-white/50 ${player.type === 'human' ? 'cursor-pointer hover:scale-110 transition-transform' : 'cursor-not-allowed'}`} aria-label={`Change color for Player ${player.id}`}/>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-2">
+                        <div className="flex gap-2">
+                            {ALL_COLORS.slice(0, numPlayers).map(color => (
+                                <button key={color} onClick={() => handleColorChange(index, color)} className={`w-8 h-8 rounded-full bg-ludo-${color} border-2 ${player.color === color ? 'border-white' : 'border-transparent'} transition-all hover:scale-110`}/>
+                            ))}
+                        </div>
+                    </PopoverContent>
+                  </Popover>
                    <Label htmlFor={`player-type-${index}`} className={`font-bold text-ludo-${player.color}`}>
                      Player {player.id}
                    </Label>
