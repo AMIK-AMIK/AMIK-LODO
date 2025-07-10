@@ -6,6 +6,7 @@ export interface Player {
   type: PlayerType;
   color: PlayerColor;
   name: string;
+  uid?: string; // Firebase Auth User ID for human players
 }
 
 export type TokenPosition = {
@@ -33,4 +34,6 @@ export type GameState = {
 
 export interface GameConfig {
   players: Player[];
+  creatorUid?: string;
+  createdAt?: Date;
 }

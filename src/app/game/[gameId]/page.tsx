@@ -27,5 +27,3 @@ export default function GamePageWithSuspense({ params }: { params: { gameId: str
     </Suspense>
   )
 }
-
-    
