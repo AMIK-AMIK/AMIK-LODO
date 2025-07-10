@@ -4,7 +4,7 @@
 import { useState, useMemo, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/auth-context"
-import { Users, Cpu, PersonStanding, Info, BarChart3, Crown, Bot, Loader2, LogOut } from "lucide-react"
+import { Users, Cpu, PersonStanding, Info, BarChart3, Crown, Bot, Loader2, LogOut, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -30,16 +30,19 @@ function UserProfile() {
 
     if (!user) return null;
 
+    const displayName = user.isAnonymous ? "Guest Player" : user.displayName || "User";
+    const displayEmail = user.isAnonymous ? "Playing as a guest" : user.email;
+
     return (
         <div className="flex items-center justify-between w-full max-w-md mb-8 p-3 bg-secondary/50 rounded-lg">
             <div className="flex items-center gap-4">
                 <Avatar>
-                    <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} />
-                    <AvatarFallback>{user.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                    <AvatarImage src={user.photoURL || undefined} alt={displayName} />
+                    <AvatarFallback>{user.isAnonymous ? <User className="w-5 h-5"/> : displayName?.charAt(0) || 'U'}</AvatarFallback>
                 </Avatar>
                 <div>
-                    <p className="font-semibold">{user.displayName}</p>
-                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                    <p className="font-semibold">{displayName}</p>
+                    {displayEmail && <p className="text-sm text-muted-foreground">{displayEmail}</p>}
                 </div>
             </div>
             <Button variant="ghost" size="icon" onClick={logout} aria-label="Log out">
@@ -65,8 +68,9 @@ export default function HomePage() {
 
   useEffect(() => {
     if (user) {
+       const creatorName = user.isAnonymous ? `Guest (${user.uid.substring(0, 4)})` : user.displayName || 'Player 1';
        setPlayers([
-        { id: 1, type: 'human', color: 'red', name: user.displayName || 'Player 1', uid: user.uid },
+        { id: 1, type: 'human', color: 'red', name: creatorName, uid: user.uid },
         { id: 2, type: 'ai', color: 'green', name: 'AI Bot 1' },
         { id: 3, type: 'ai', color: 'yellow', name: 'AI Bot 2' },
         { id: 4, type: 'ai', color: 'blue', name: 'AI Bot 3' },
@@ -156,7 +160,13 @@ export default function HomePage() {
       return;
     }
     // Ensure the creator is one of the players
-    const finalPlayers = players.map(p => p.type === 'human' && !p.uid ? {...p, uid: user?.uid, name: user?.displayName || p.name} : p)
+    const finalPlayers = players.map(p => {
+        if (p.type === 'human' && p.uid === user?.uid) {
+            const creatorName = user.isAnonymous ? `Guest (${user.uid.substring(0, 4)})` : user.displayName || p.name;
+            return {...p, name: creatorName};
+        }
+        return p;
+    });
 
 
     setIsLoading(true);
@@ -224,8 +234,8 @@ export default function HomePage() {
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Popover>
-                            <PopoverTrigger asChild disabled={player.type === 'ai'}>
-                            <button className={`w-6 h-6 rounded-full bg-ludo-${player.color} border-2 border-white/50 cursor-pointer hover:scale-110 transition-transform disabled:cursor-not-allowed disabled:opacity-50`} aria-label={`Change color for Player ${player.id}`}/>
+                            <PopoverTrigger asChild>
+                            <button className={`w-6 h-6 rounded-full bg-ludo-${player.color} border-2 border-white/50 cursor-pointer hover:scale-110 transition-transform`} aria-label={`Change color for Player ${player.id}`}/>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-2">
                                 <div className="flex gap-2">

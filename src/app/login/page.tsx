@@ -13,7 +13,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { Crown, Loader2 } from "lucide-react"
+import { Crown, Loader2, User } from "lucide-react"
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -27,7 +27,7 @@ const signupSchema = z.object({
 })
 
 export default function LoginPage() {
-  const { user, loading, loginWithGoogle, loginWithEmail, signUpWithEmail } = useAuth()
+  const { user, loading, loginWithGoogle, loginWithEmail, signUpWithEmail, loginAnonymously } = useAuth()
   const router = useRouter()
   const [authError, setAuthError] = useState<string | null>(null);
 
@@ -59,6 +59,8 @@ export default function LoginPage() {
     const error = await loginWithEmail(values.email, values.password);
     if (error) {
       setAuthError(error);
+      loginForm.setError("password", { type: "manual", message: " " });
+      loginForm.setError("email", { type: "manual", message: " " });
     }
   }
 
@@ -66,7 +68,7 @@ export default function LoginPage() {
     setAuthError(null);
     const error = await signUpWithEmail(values.email, values.password, values.username);
     if (error) {
-      setAuthError(error);
+        setAuthError(error);
     }
   }
 
@@ -147,10 +149,16 @@ export default function LoginPage() {
                     <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
                   </div>
                 </div>
-                <Button variant="outline" className="w-full" onClick={loginWithGoogle}>
-                  <svg className="mr-2 -ml-1 w-4 h-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 21.2 173.8 56.2l-65.4 64.2C335.5 99.4 294.8 84 248 84c-85.8 0-155.1 69.4-155.1 172s69.3 172 155.1 172c98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 26.9 3.9 41.4z"></path></svg>
-                  Sign in with Google
-                </Button>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button variant="outline" onClick={loginWithGoogle}>
+                    <svg className="mr-2 -ml-1 w-4 h-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 21.2 173.8 56.2l-65.4 64.2C335.5 99.4 294.8 84 248 84c-85.8 0-155.1 69.4-155.1 172s69.3 172 155.1 172c98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 26.9 3.9 41.4z"></path></svg>
+                    Google
+                  </Button>
+                  <Button variant="outline" onClick={loginAnonymously}>
+                    <User className="mr-2 -ml-1 w-4 h-4" />
+                    Guest
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -215,7 +223,7 @@ export default function LoginPage() {
                     <span className="w-full border-t" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+                    <span className="bg-card px-2 text-muted-foreground">Or sign up with</span>
                   </div>
                 </div>
                 <Button variant="outline" className="w-full" onClick={loginWithGoogle}>

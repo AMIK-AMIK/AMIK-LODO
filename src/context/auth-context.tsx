@@ -10,6 +10,7 @@ import {
     signOut,
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
+    signInAnonymously,
     updateProfile,
     AuthError
 } from 'firebase/auth';
@@ -40,6 +41,7 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<string | undefined>;
   loginWithEmail: (email: string, pass: string) => Promise<string | undefined>;
   signUpWithEmail: (email: string, pass: string, displayName: string) => Promise<string | undefined>;
+  loginAnonymously: () => Promise<string | undefined>;
   logout: () => Promise<void>;
 }
 
@@ -80,9 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         router.push('/');
     } catch(error) {
         console.error("Email login error:", error);
-        const errorMessage = getFriendlyErrorMessage(error as AuthError);
-        toast({ title: "Login Failed", description: errorMessage, variant: "destructive" });
-        return errorMessage;
+        return getFriendlyErrorMessage(error as AuthError);
     }
   }
 
@@ -98,8 +98,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         router.push('/');
     } catch(error) {
         console.error("Email sign up error:", error);
+        return getFriendlyErrorMessage(error as AuthError);
+    }
+  }
+
+  const loginAnonymously = async () => {
+    try {
+        await signInAnonymously(auth);
+        toast({ title: "Welcome!", description: "You are playing as a guest." });
+        router.push('/');
+    } catch(error) {
+        console.error("Anonymous login error:", error);
         const errorMessage = getFriendlyErrorMessage(error as AuthError);
-        toast({ title: "Sign Up Failed", description: errorMessage, variant: "destructive" });
+        toast({ title: "Login Failed", description: errorMessage, variant: "destructive" });
         return errorMessage;
     }
   }
@@ -122,6 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loginWithGoogle,
     loginWithEmail,
     signUpWithEmail,
+    loginAnonymously,
     logout,
   };
 
