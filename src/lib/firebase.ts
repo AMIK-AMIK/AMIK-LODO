@@ -5,12 +5,13 @@ import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  apiKey: "AIzaSyD751WpTjD0l4xgk1wAYkPMVeIZPpXIyaM",
+  authDomain: "amik-lodo-1af17.firebaseapp.com",
+  projectId: "amik-lodo-1af17",
+  storageBucket: "amik-lodo-1af17.appspot.com",
+  messagingSenderId: "699079515264",
+  appId: "1:699079515264:web:608c71c562381146e81a65",
+  measurementId: "G-089BBM02XG"
 };
 
 // Initialize Firebase
